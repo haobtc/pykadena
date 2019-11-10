@@ -1,12 +1,12 @@
-from kadena.types import BlockHeader
+from kadena import types
 
-header = bytes.fromhex(
+work_header = bytes.fromhex(
     "05000000d3a6e63c5b5767267eb9021d98be2333d4af4bd3d1df740f7fffc70a000000000000000000000000fa5b1b55de9605006d4503feb42b2494cacf9bd1b1998300c53cc31c3c0601a427e159a586befc3e030000000000022442d2f610b4db056a254b8c34378fdab681651c379a9d82b07eee5b242775060000007972e7a310a9941a5f77c5b864cc21ae95a9c72712f5e9d876b79dd7db45280f090000008019cf71bcdbe10621b75d9364a3a3ebe8a5bd546bc4924e61a3aa1672994ec2d3a6e63c5b5767267eb9021d98be2333d4af4bd3d1df740f7fffc70a0000000077c681d5bb4290eb0fa481bc8b1d703883c0e3e4fb41ad78012762a15a1ffbe105000000b452fc44ba010100000000000000000000000000000000000000000000000000307100000000000005000000aadbc3f0dd9605000000000000000000"
 )
 
-decoded_header = BlockHeader(
+decoded_work_header = types.WorkHeader(
     chain=5,
-    hash_target="d3a6e63c5b5767267eb9021d98be2333d4af4bd3d1df740f7fffc70a00000000",
+    target="d3a6e63c5b5767267eb9021d98be2333d4af4bd3d1df740f7fffc70a00000000",
     nonce=0,
     time=1573256538315770,
     parent="6d4503feb42b2494cacf9bd1b1998300c53cc31c3c0601a427e159a586befc3e",
@@ -25,5 +25,40 @@ decoded_header = BlockHeader(
 )
 
 
-def test_block_header():
-    assert BlockHeader.from_binary(header) == decoded_header
+block_header_bytes = bytes.fromhex(
+    "2ce1486167cf551658938f3a1996050034b4e8965f0430ea67894be6e5078e4f16202857271f1e1674977348112bd7a80300020000005081268166b4834e6cf29bcabbb179d4964e5cc6f04dd50620b09599bd7ed6a60300000012ecdd4a4cb23ac3bf0cec5350e2a1bba75d375f26354a68e5c2b928e328058f05000000c6bd6e6a63c9ee2113c416b736caa9a70cf4f1b4ab0e7c8c68004aaf36c43cedf40d2bd714e867429577bed38ccfcea7d15bf117b9fed073d43ad371c70000009862ecfd18f0e8444c047ab3600eb51f6554bbff47bef96803948407d39bd8630000000023e720e500000000000000000000000000000000000000000000000000000000670100000000000005000000243284861896050000000000000000001b8048184bb742db2ae8e1a0a1250352d9d570856a32ab69480b46f112c10009"
+)
+block_header_base64 = "LOFIYWfPVRZYk486GZYFADS06JZfBDDqZ4lL5uUHjk8WIChXJx8eFnSXc0gRK9eoAwACAAAAUIEmgWa0g05s8pvKu7F51JZOXMbwTdUGILCVmb1-1qYDAAAAEuzdSkyyOsO_DOxTUOKhu6ddN18mNUpo5cK5KOMoBY8FAAAAxr1uamPJ7iETxBa3Nsqppwz08bSrDnyMaABKrzbEPO30DSvXFOhnQpV3vtOMz86n0VvxF7n-0HPUOtNxxwAAAJhi7P0Y8OhETAR6s2AOtR9lVLv_R775aAOUhAfTm9hjAAAAACPnIOUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZwEAAAAAAAAFAAAAJDKEhhiWBQAAAAAAAAAAABuASBhLt0LbKujhoKElA1LZ1XCFajKraUgLRvESwQAJ"
+
+block_header = types.BlockHeader(
+    nonce=1609420484775567660,
+    time=1572409984389976,
+    parent="34b4e8965f0430ea67894be6e5078e4f16202857271f1e1674977348112bd7a8",
+    adjacents={
+        2: "5081268166b4834e6cf29bcabbb179d4964e5cc6f04dd50620b09599bd7ed6a6",
+        3: "12ecdd4a4cb23ac3bf0cec5350e2a1bba75d375f26354a68e5c2b928e328058f",
+        5: "c6bd6e6a63c9ee2113c416b736caa9a70cf4f1b4ab0e7c8c68004aaf36c43ced",
+    },
+    target="f40d2bd714e867429577bed38ccfcea7d15bf117b9fed073d43ad371c7000000",
+    payload="9862ecfd18f0e8444c047ab3600eb51f6554bbff47bef96803948407d39bd863",
+    chain=0,
+    weight=3844138787,
+    height=359,
+    version=5,
+    epoch_start=1572406963745316,
+    flags=0,
+    hash="1b8048184bb742db2ae8e1a0a1250352d9d570856a32ab69480b46f112c10009",
+    difficulty=21534635,
+)
+
+
+def test_decode_work_header():
+    assert types.decode_header(work_header) == decoded_work_header
+
+
+def test_decode_block_header_base64():
+    assert types.decode_header(block_header_base64) == block_header
+
+
+def test_decode_block_header_bytes():
+    assert types.decode_header(block_header_bytes) == block_header
