@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, Union
 
 from kadena import utils
-
-MAX_BOUND = 2 ** 256 - 1
+from kadena.constants import MAX_BOUND
 
 
 def decode_header(data):
@@ -158,3 +157,21 @@ class WorkHeader:
             flags=fields[13],
             difficulty=MAX_BOUND // int.from_bytes(fields[1], "little"),
         )
+
+
+@dataclass
+class Peer:
+    addr: str
+    height: int = None
+    weight: int = None
+    online: bool = None
+    mining: bool = None
+    header: BlockHeader = None
+    last_seen: int = None
+    version: str = None
+
+    @classmethod
+    def from_cut(cls, data):
+        host = data["address"]["hostname"]
+        port = data["address"]["port"]
+        return cls(f"{host}:{port}")
