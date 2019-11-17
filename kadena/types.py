@@ -1,36 +1,34 @@
-import base64
 import struct
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Union
+
+from kadena import utils
 
 MAX_BOUND = 2 ** 256 - 1
 
 
 def decode_header(data):
     """
-    Decode block or work header from binary or base64 encoding.
+    Decode block or work header from binary, base64 or object encoding.
     """
+    if isinstance(data, dict):
+        return BlockHeader.from_object(data)
     if isinstance(data, str):
-        data += "=" * (-len(data) % 4)
-        data = base64.urlsafe_b64decode(data)
+        data = utils.base64_to_bytes(data)
     if len(data) == 318:
         return BlockHeader.from_bytes(data)
     if len(data) == 322:
         return WorkHeader.from_bytes(data)
-    raise ValueError("encoded header should be 318 or 322 bytes")
+    raise ValueError("encoded header should be 318 or 322 bytes, got %d bytes", len(data))
 
 
 def get_adjacents(data: bytes) -> Dict[int, str]:
+    """
+    Decode adjacent parent block hashes.
+    """
     num, data = struct.unpack("<h108s", data)
     adj = struct.unpack("<" + "i32s" * num, data)
-    return {chain: block.hex() for chain, block in zip(adj[::2], adj[1::2])}
-
-
-def ensure_bytes(data):
-    if isinstance(data, str):
-        data += "=" * (-len(data) % 4)
-        data = base64.urlsafe_b64decode(data)
-    return data
+    return {chain: utils.bytes_to_base64(block) for chain, block in zip(adj[::2], adj[1::2])}
 
 
 @dataclass
@@ -44,7 +42,7 @@ class BlockHeader:
     chain: int
     weight: int
     height: int
-    version: int
+    version: Union[int, str]  # examples: "mainnet01" or 5
     epoch_start: int
     flags: int
     hash: str
@@ -73,18 +71,37 @@ class BlockHeader:
         return cls(
             nonce=fields[0],
             time=fields[1],
-            parent=fields[2].hex(),
+            parent=utils.bytes_to_base64(fields[2]),
             adjacents=get_adjacents(fields[3]),
-            target=fields[4].hex(),
-            payload=fields[5].hex(),
+            target=utils.bytes_to_base64(fields[4]),
+            payload=utils.bytes_to_base64(fields[5]),
             chain=fields[6],
             weight=int.from_bytes(fields[7], "little"),
             height=fields[8],
             version=fields[9],
             epoch_start=fields[10],
             flags=fields[11],
-            hash=fields[12].hex(),
+            hash=utils.bytes_to_base64(fields[12]),
             difficulty=MAX_BOUND // int.from_bytes(fields[4], "little"),
+        )
+
+    @classmethod
+    def from_object(cls, data):
+        return cls(
+            nonce=int(data["nonce"]),
+            time=data["creationTime"],
+            parent=data["parent"],
+            adjacents={int(chain): block for chain, block in data["adjacents"].items()},
+            target=data["target"],
+            payload=data["payloadHash"],
+            chain=data["chainId"],
+            weight=utils.base64_to_int(data["weight"]),
+            height=data["height"],
+            version=data["chainwebVersion"],  # str
+            epoch_start=data["epochStart"],
+            flags=data["featureFlags"],
+            hash=data["hash"],
+            difficulty=MAX_BOUND // utils.base64_to_int(data["target"]),
         )
 
 
@@ -128,12 +145,12 @@ class WorkHeader:
         fields = list(struct.unpack("<i32sqq32s110s32s32si32sqiqq", data))
         return cls(
             chain=fields[0],
-            target=fields[1].hex(),
+            target=utils.bytes_to_base64(fields[1]),
             nonce=fields[2],
             time=fields[3],
-            parent=fields[4].hex(),
+            parent=utils.bytes_to_base64(fields[4]),
             adjacents=get_adjacents(fields[5]),
-            payload=fields[7].hex(),
+            payload=utils.bytes_to_base64(fields[7]),
             weight=int.from_bytes(fields[9], "little"),
             height=fields[10],
             version=fields[11],
